@@ -1,5 +1,6 @@
 import Foundation
 import AVFoundation
+import WebKit
 
 @objc(QRScanner)
 class QRScanner : CDVPlugin, AVCaptureMetadataOutputObjectsDelegate {
@@ -204,7 +205,9 @@ class QRScanner : CDVPlugin, AVCaptureMetadataOutputObjectsDelegate {
     @objc func makeOpaque(){
         self.webView?.isOpaque = true
         self.webView?.backgroundColor = UIColor.white
-        self.webView?.scrollView.backgroundColor = UIColor.white
+        if let wkWebView = self.webView as? WKWebView {
+            wkWebView.scrollView.backgroundColor = UIColor.white
+        }
     }
 
     @objc func boolToNumberString(bool: Bool) -> String{
@@ -244,10 +247,12 @@ class QRScanner : CDVPlugin, AVCaptureMetadataOutputObjectsDelegate {
             return
         }
         let found = metadataObjects[0] as! AVMetadataMachineReadableCodeObject
-        if found.type == AVMetadataObject.ObjectType.qr && found.stringValue != nil {
+        if found.type == AVMetadataObject.ObjectType.qr, let scannedValue = found.stringValue {
             scanning = false
-            let pluginResult = CDVPluginResult(status: CDVCommandStatus_OK, messageAs: found.stringValue)
-            commandDelegate!.send(pluginResult, callbackId: nextScanningCommand?.callbackId!)
+            let pluginResult = CDVPluginResult(status: CDVCommandStatus_OK, messageAs: scannedValue)
+            if let callbackId = nextScanningCommand?.callbackId {
+                commandDelegate!.send(pluginResult, callbackId: callbackId)
+            }
             nextScanningCommand = nil
         }
     }
@@ -298,7 +303,9 @@ class QRScanner : CDVPlugin, AVCaptureMetadataOutputObjectsDelegate {
     @objc func show(_ command: CDVInvokedUrlCommand) {
         self.webView?.isOpaque = false
         self.webView?.backgroundColor = UIColor.clear
-        self.webView?.scrollView.backgroundColor = UIColor.clear
+        if let wkWebView = self.webView as? WKWebView {
+            wkWebView.scrollView.backgroundColor = UIColor.clear
+        }
         self.getStatus(command)
     }
 
